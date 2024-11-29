@@ -295,37 +295,29 @@
             return cells;
         }
 
-        function showWinLine(cells) {
-            if (winLine) {
-                winLine.remove();
+        function showWinLine(row, col) {
+            const cells = checkWin(row, col);
+            if (cells) {
+                const x1 = cells[0].col * (100 / cols) + (100 / (cols * 2));
+                const y1 = cells[0].row * (100 / rows) + (100 / (rows * 2));
+                const x2 = cells[3].col * (100 / cols) + (100 / (cols * 2));
+                const y2 = cells[3].row * (100 / rows) + (100 / (rows * 2));
+
+                winLine = document.createElement('div');
+                winLine.classList.add('win-line');
+                gameBoard.appendChild(winLine);
+
+                const dx = x2 - x1;
+                const dy = y2 - y1;
+                const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+                const length = Math.sqrt(dx * dx + dy * dy);
+
+                winLine.style.width = `${length}%`;
+                winLine.style.transform = `rotate(${angle}deg)`;
+                winLine.style.left = `${x1}%`;
+                winLine.style.top = `${y1}%`;
+                winLine.style.backgroundColor = 'black';
             }
-
-            const x1 = cells[0].col * (100 / cols) + (100 / (cols * 2));
-            const y1 = cells[0].row * (100 / rows) + (100 / (rows * 2));
-            const x2 = cells[3].col * (100 / cols) + (100 / (cols * 2));
-            const y2 = cells[3].row * (100 / rows) + (100 / (rows * 2));
-
-            winLine = document.createElement('div');
-            winLine.classList.add('win-line');
-            gameBoard.appendChild(winLine);
-
-            const dx = x2 - x1;
-            const dy = y2 - y1;
-            const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-            const length = Math.sqrt(dx * dx + dy * dy);
-
-            winLine.style.width = `${length}%`;
-            winLine.style.transform = `rotate(${angle}deg)`;
-            winLine.style.left = `${x1}%`;
-            winLine.style.top = `${y1}%`;
-            winLine.style.backgroundColor = 'black';
-        }
-
-        function resetGame() {
-            grid = Array.from({ length: rows }, () => Array(cols).fill(0));
-            currentPlayer = 1;
-            if (winLine) winLine.remove();
-            createBoard();
         }
 
         function resetBoard() {
@@ -338,6 +330,10 @@
         function updateScores() {
             document.getElementById("player1Score").textContent = playerScores.player1;
             document.getElementById("player2Score").textContent = playerScores.player2;
+        }
+
+        function resetGame() {
+            resetBoard();
         }
 
         createBoard();
