@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+\<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -261,7 +261,6 @@
         }
 
         function handleDrop(col) {
-            col = parseInt(col);
             for (let row = rows - 1; row >= 0; row--) {
                 if (grid[row][col] === 0) {
                     grid[row][col] = currentPlayer;
@@ -298,32 +297,8 @@
             previewDisc.style.backgroundColor = currentPlayer === 1 ? "red" : "yellow";
         }
 
-        function showWinLine() {
-            const winningCells = getWinningCells();
-            if (winningCells.length >= 4) {
-                const start = winningCells[0];
-                const end = winningCells[winningCells.length - 1];
-                winLine = document.createElement("div");
-                winLine.classList.add("win-line");
-                const startX = start.col * (gameBoard.offsetWidth / cols) + gameBoard.offsetLeft;
-                const startY = start.row * (gameBoard.offsetHeight / rows) + gameBoard.offsetTop;
-                const endX = end.col * (gameBoard.offsetWidth / cols) + gameBoard.offsetLeft;
-                const endY = end.row * (gameBoard.offsetHeight / rows) + gameBoard.offsetTop;
-
-                const width = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
-                const angle = Math.atan2(endY - startY, endX - startX) * 180 / Math.PI;
-
-                winLine.style.width = width + "px";
-                winLine.style.height = "5px";
-                winLine.style.transform = `rotate(${angle}deg)`;
-                winLine.style.top = startY + "px";
-                winLine.style.left = startX + "px";
-                document.body.appendChild(winLine);
-
-                setTimeout(() => {
-                    winLine.style.width = "0";
-                }, 2000);
-            }
+        function checkWin(row, col) {
+            return getWinningCells().length >= 4;
         }
 
         function getWinningCells() {
@@ -350,6 +325,34 @@
                 }
             }
             return [];
+        }
+
+        function showWinLine() {
+            const winningCells = getWinningCells();
+            if (winningCells.length >= 4) {
+                const start = winningCells[0];
+                const end = winningCells[winningCells.length - 1];
+                winLine = document.createElement("div");
+                winLine.classList.add("win-line");
+                const startX = start.col * (gameBoard.offsetWidth / cols) + gameBoard.offsetLeft;
+                const startY = start.row * (gameBoard.offsetHeight / rows) + gameBoard.offsetTop;
+                const endX = end.col * (gameBoard.offsetWidth / cols) + gameBoard.offsetLeft;
+                const endY = end.row * (gameBoard.offsetHeight / rows) + gameBoard.offsetTop;
+
+                const width = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+                const angle = Math.atan2(endY - startY, endX - startX) * 180 / Math.PI;
+
+                winLine.style.width = width + "px";
+                winLine.style.height = "5px";
+                winLine.style.transform = `rotate(${angle}deg)`;
+                winLine.style.top = startY + "px";
+                winLine.style.left = startX + "px";
+                document.body.appendChild(winLine);
+
+                setTimeout(() => {
+                    winLine.style.width = "0";
+                }, 2000);
+            }
         }
 
         function updateScores() {
