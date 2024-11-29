@@ -1,4 +1,4 @@
-\<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -151,6 +151,15 @@
             margin-right: 20px;
             padding: 5px;
         }
+
+        .win-line {
+            position: absolute;
+            background-color: black;
+            height: 5px;
+            z-index: 10;
+            transform-origin: center;
+        }
+
     </style>
 </head>
 <body>
@@ -185,12 +194,12 @@
         const gameContainer = document.querySelector('.game-container');
         const gameBoard = document.getElementById("game");
         const previewDisc = document.getElementById("previewDisc");
+        let winLine = null;
 
         function startGame() {
             let player1Name = document.getElementById("player1Name").value || "Гравець 1";
             let player2Name = document.getElementById("player2Name").value || "Гравець 2";
 
-            // Перевірка імен
             if (player1Name === "52" || player1Name === "69") {
                 player1Name = "Пфу Абаюдна";
             }
@@ -231,6 +240,7 @@
                         const winner = currentPlayer === 1 ? 'player1' : 'player2';
                         playerScores[winner]++;
                         alert(`Виграв ${document.getElementById(winner + 'Header').textContent}!`);
+                        showWinLine(row, col);
                         updateScores();
                         resetBoard();
                         return;
@@ -261,37 +271,67 @@
             ];
             for (const { r, c } of directions) {
                 let count = 1;
-                count += countInDirection(row, col, r, c);
-                count += countInDirection(row, col, -r, -c);
-                if (count >= 4) return true;
+                const cells = [{ row, col }];
+                cells.push(...getLineCells(row, col, r, c));
+                cells.push(...getLineCells(row, col, -r, -c));
+                if (cells.length >= 4) {
+                    return cells;
+                }
             }
-            return false;
+            return null;
         }
 
-        function countInDirection(row, col, dr, dc) {
-            let count = 0;
-            let player = grid[row][col];
+        function getLineCells(row, col, r, c) {
+            const cells = [];
             for (let i = 1; i < 4; i++) {
-                const newRow = row + dr * i;
-                const newCol = col + dc * i;
-                if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < cols && grid[newRow][newCol] === player) {
-                    count++;
+                const newRow = row + r * i;
+                const newCol = col + c * i;
+                if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < cols && grid[newRow][newCol] === grid[row][col]) {
+                    cells.push({ row: newRow, col: newCol });
                 } else {
                     break;
                 }
             }
-            return count;
+            return cells;
+        }
+
+        function showWinLine(cells) {
+            if (winLine) {
+                winLine.remove();
+            }
+
+            const x1 = cells[0].col * (100 / cols) + (100 / (cols * 2));
+            const y1 = cells[0].row * (100 / rows) + (100 / (rows * 2));
+            const x2 = cells[3].col * (100 / cols) + (100 / (cols * 2));
+            const y2 = cells[3].row * (100 / rows) + (100 / (rows * 2));
+
+            winLine = document.createElement('div');
+            winLine.classList.add('win-line');
+            gameBoard.appendChild(winLine);
+
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+            const length = Math.sqrt(dx * dx + dy * dy);
+
+            winLine.style.width = `${length}%`;
+            winLine.style.transform = `rotate(${angle}deg)`;
+            winLine.style.left = `${x1}%`;
+            winLine.style.top = `${y1}%`;
+            winLine.style.backgroundColor = 'black';
         }
 
         function resetGame() {
             grid = Array.from({ length: rows }, () => Array(cols).fill(0));
             currentPlayer = 1;
+            if (winLine) winLine.remove();
             createBoard();
         }
 
         function resetBoard() {
             grid = Array.from({ length: rows }, () => Array(cols).fill(0));
             currentPlayer = 1;
+            if (winLine) winLine.remove();
             createBoard();
         }
 
