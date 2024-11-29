@@ -151,6 +151,13 @@
             margin-right: 20px;
             padding: 5px;
         }
+
+        .win-line {
+            position: absolute;
+            background-color: black;
+            z-index: 10;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
@@ -185,6 +192,7 @@
         const gameContainer = document.querySelector('.game-container');
         const gameBoard = document.getElementById("game");
         const previewDisc = document.getElementById("previewDisc");
+        let winLine = null;
 
         function startGame() {
             let player1Name = document.getElementById("player1Name").value || "Гравець 1";
@@ -261,38 +269,65 @@
             ];
             for (const { r, c } of directions) {
                 let count = 1;
-                count += countInDirection(row, col, r, c);
-                count += countInDirection(row, col, -r, -c);
-                if (count >= 4) return true;
+                const winCells = [{ row, col }];
+                winCells.push(...getWinningCells(row, col, r, c));
+                winCells.push(...getWinningCells(row, col, -r, -c));
+
+                if (winCells.length >= 4) {
+                    drawWinLine(winCells);
+                    return true;
+                }
             }
             return false;
         }
 
-        function countInDirection(row, col, dr, dc) {
-            let count = 0;
-            let player = grid[row][col];
-            for (let i = 1; i < 4; i++) {
-                const newRow = row + dr * i;
-                const newCol = col + dc * i;
-                if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < cols && grid[newRow][newCol] === player) {
-                    count++;
-                } else {
-                    break;
-                }
+        function getWinningCells(row, col, r, c) {
+            let cells = [];
+            let newRow = row + r;
+            let newCol = col + c;
+            while (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < cols && grid[newRow][newCol] === currentPlayer) {
+                cells.push({ row: newRow, col: newCol });
+                newRow += r;
+                newCol += c;
             }
-            return count;
+            return cells;
         }
 
-        function resetGame() {
-            grid = Array.from({ length: rows }, () => Array(cols).fill(0));
-            currentPlayer = 1;
-            createBoard();
+        function drawWinLine(cells) {
+            if (winLine) {
+                winLine.remove();
+            }
+            winLine = document.createElement("div");
+            winLine.classList.add("win-line");
+            const start = cells[0];
+            const end = cells[cells.length - 1];
+            const startX = start.col * (gameBoard.offsetWidth / cols) + gameBoard.offsetLeft;
+            const startY = start.row * (gameBoard.offsetHeight / rows) + gameBoard.offsetTop;
+            const endX = end.col * (gameBoard.offsetWidth / cols) + gameBoard.offsetLeft;
+            const endY = end.row * (gameBoard.offsetHeight / rows) + gameBoard.offsetTop;
+
+            const width = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+            const angle = Math.atan2(endY - startY, endX - startX) * 180 / Math.PI;
+
+            winLine.style.width = width + "px";
+            winLine.style.height = "5px";
+            winLine.style.transform = `rotate(${angle}deg)`;
+            winLine.style.top = startY + "px";
+            winLine.style.left = startX + "px";
+            document.body.appendChild(winLine);
         }
 
         function resetBoard() {
             grid = Array.from({ length: rows }, () => Array(cols).fill(0));
             currentPlayer = 1;
             createBoard();
+        }
+
+        function resetGame() {
+            playerScores.player1 = 0;
+            playerScores.player2 = 0;
+            updateScores();
+            resetBoard();
         }
 
         function updateScores() {
