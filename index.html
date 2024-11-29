@@ -15,21 +15,65 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            flex-direction: column;
             height: 100vh;
             background-color: #000;
+            font-family: Arial, sans-serif;
+            color: white;
         }
 
         .game-container {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .scoreboard {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            width: 150px;
+        }
+
+        .scoreboard h2 {
+            margin-bottom: 10px;
+        }
+
+        .scoreboard .score {
+            font-size: 1.5em;
+            background: white;
+            color: black;
+            padding: 10px 20px;
+            border-radius: 5px;
+        }
+
+        .game-board {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .preview-disc {
+            width: 14%;
+            height: 30px;
+            margin-bottom: 10px;
+            border-radius: 50%;
+            background-color: red;
+            transition: background-color 0.3s;
+        }
+
+        .grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            grid-template-rows: repeat(6, 1fr);
             gap: 5px;
-            width: 90vmin;
-            height: 80vmin;
             background-color: black;
             border: 5px solid white;
-            border-radius: 10px;
+            width: 90vmin;
+            height: 80vmin;
             position: relative;
+            border-radius: 10px;
         }
 
         .cell {
@@ -81,10 +125,7 @@
         }
 
         .reset {
-            position: absolute;
-            bottom: -60px;
-            left: 50%;
-            transform: translateX(-50%);
+            margin-top: 20px;
             padding: 10px 20px;
             font-size: 1.2em;
             background-color: white;
@@ -93,37 +134,83 @@
             border-radius: 5px;
             cursor: pointer;
         }
+
+        .reset:hover {
+            background-color: #ddd;
+        }
+
+        .name-input {
+            margin-bottom: 20px;
+        }
+
+        .name-input label {
+            margin-right: 10px;
+        }
+
+        .name-input input {
+            margin-right: 20px;
+            padding: 5px;
+        }
     </style>
 </head>
 <body>
-    <div id="game" class="game-container"></div>
-    <button class="reset" onclick="resetGame()">Перезапустити</button>
+    <div class="name-input">
+        <label for="player1Name">Ім'я гравця 1:</label>
+        <input type="text" id="player1Name" placeholder="Гравець 1">
+        <label for="player2Name">Ім'я гравця 2:</label>
+        <input type="text" id="player2Name" placeholder="Гравець 2">
+        <button onclick="startGame()">Розпочати гру</button>
+    </div>
+    <div class="game-container" style="display: none;">
+        <div class="scoreboard">
+            <h2 id="player1Header">Гравець 1</h2>
+            <div class="score" id="player1Score">0</div>
+        </div>
+        <div class="game-board">
+            <div class="preview-disc" id="previewDisc"></div>
+            <div id="game" class="grid"></div>
+            <button class="reset" onclick="resetGame()">Перезапустити</button>
+        </div>
+        <div class="scoreboard">
+            <h2 id="player2Header">Гравець 2</h2>
+            <div class="score" id="player2Score">0</div>
+        </div>
+    </div>
     <script>
         const rows = 6;
         const cols = 7;
         let currentPlayer = 1;
         let grid = Array.from({ length: rows }, () => Array(cols).fill(0));
-        const gameContainer = document.getElementById("game");
+        const playerScores = { player1: 0, player2: 0 };
+        const gameContainer = document.querySelector('.game-container');
+        const gameBoard = document.getElementById("game");
+        const previewDisc = document.getElementById("previewDisc");
+
+        function startGame() {
+            const player1Name = document.getElementById("player1Name").value || "Гравець 1";
+            const player2Name = document.getElementById("player2Name").value || "Гравець 2";
+
+            document.getElementById("player1Header").textContent = player1Name;
+            document.getElementById("player2Header").textContent = player2Name;
+
+            document.querySelector('.name-input').style.display = 'none';
+            gameContainer.style.display = 'flex';
+            resetGame();
+        }
 
         function createBoard() {
-            gameContainer.innerHTML = "";
+            gameBoard.innerHTML = "";
             for (let row = 0; row < rows; row++) {
                 for (let col = 0; col < cols; col++) {
                     const cell = document.createElement("div");
                     cell.classList.add("cell", "empty");
                     cell.dataset.row = row;
                     cell.dataset.col = col;
-                    gameContainer.appendChild(cell);
+                    cell.addEventListener("click", () => handleDrop(col));
+                    gameBoard.appendChild(cell);
                 }
             }
-            addColumnListeners();
-        }
-
-        function addColumnListeners() {
-            const cells = document.querySelectorAll(".cell");
-            cells.forEach(cell => {
-                cell.addEventListener("click", () => handleDrop(cell.dataset.col));
-            });
+            updatePreview();
         }
 
         function handleDrop(col) {
@@ -133,35 +220,37 @@
                     grid[row][col] = currentPlayer;
                     addDisc(row, col, currentPlayer);
                     if (checkWin(row, col)) {
-                        setTimeout(() => {
-                            alert(`Гравець ${currentPlayer} виграв!`);
-                            resetGame();
-                        }, 500);
+                        const winner = currentPlayer === 1 ? 'player1' : 'player2';
+                        playerScores[winner]++;
+                        alert(`Виграв ${document.getElementById(winner + 'Header').textContent}!`);
+                        updateScores();
+                        resetBoard();
+                        return;
                     }
                     currentPlayer = currentPlayer === 1 ? 2 : 1;
+                    updatePreview();
                     return;
                 }
             }
         }
 
         function addDisc(row, col, player) {
-            const cell = document.querySelector(
-                `.cell[data-row='${row}'][data-col='${col}']`
-            );
+            const cell = document.querySelector(`.cell[data-row='${row}'][data-col='${col}']`);
             const disc = document.createElement("div");
             disc.classList.add("disc", `player${player}`);
             cell.appendChild(disc);
             cell.classList.remove("empty");
         }
 
+        function updatePreview() {
+            previewDisc.style.backgroundColor = currentPlayer === 1 ? "red" : "yellow";
+        }
+
         function checkWin(row, col) {
             const directions = [
-                { r: 0, c: 1 }, // Горизонталь
-                { r: 1, c: 0 }, // Вертикаль
-                { r: 1, c: 1 }, // Діагональ вправо вниз
-                { r: 1, c: -1 } // Діагональ вправо вверх
+                { r: 0, c: 1 }, { r: 1, c: 0 },
+                { r: 1, c: 1 }, { r: 1, c: -1 }
             ];
-
             for (const { r, c } of directions) {
                 let count = 1;
                 count += countInDirection(row, col, r, c);
@@ -177,25 +266,28 @@
             for (let i = 1; i < 4; i++) {
                 const newRow = row + dr * i;
                 const newCol = col + dc * i;
-                if (
-                    newRow >= 0 &&
-                    newRow < rows &&
-                    newCol >= 0 &&
-                    newCol < cols &&
-                    grid[newRow][newCol] === player
-                ) {
+                if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < cols && grid[newRow][newCol] === player) {
                     count++;
-                } else {
-                    break;
-                }
+                } else break;
             }
             return count;
         }
 
         function resetGame() {
+            resetBoard();
+            playerScores.player1 = playerScores.player2 = 0;
+            updateScores();
+        }
+
+        function resetBoard() {
             grid = Array.from({ length: rows }, () => Array(cols).fill(0));
             currentPlayer = 1;
             createBoard();
+        }
+
+        function updateScores() {
+            document.getElementById("player1Score").textContent = playerScores.player1;
+            document.getElementById("player2Score").textContent = playerScores.player2;
         }
 
         createBoard();
