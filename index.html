@@ -157,6 +157,33 @@
             background-color: black;
             z-index: 10;
             pointer-events: none;
+            transition: width 1s, transform 1s;
+        }
+
+        .draw-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 2em;
+            background-color: black;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .win-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 2em;
+            background-color: black;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
         }
     </style>
 </head>
@@ -177,6 +204,8 @@
             <div class="preview-disc" id="previewDisc"></div>
             <div id="game" class="grid"></div>
             <button class="reset" onclick="resetGame()">Перезапустити</button>
+            <div class="draw-message" id="drawMessage">Нічия!</div>
+            <div class="win-message" id="winMessage"></div>
         </div>
         <div class="scoreboard">
             <h2 id="player2Header">Гравець 2</h2>
@@ -193,6 +222,8 @@
         const gameBoard = document.getElementById("game");
         const previewDisc = document.getElementById("previewDisc");
         let winLine = null;
+        const drawMessage = document.getElementById("drawMessage");
+        const winMessage = document.getElementById("winMessage");
 
         function startGame() {
             let player1Name = document.getElementById("player1Name").value || "Гравець 1";
@@ -238,96 +269,87 @@
                     if (checkWin(row, col)) {
                         const winner = currentPlayer === 1 ? 'player1' : 'player2';
                         playerScores[winner]++;
-                        alert(`Виграв ${document.getElementById(winner + 'Header').textContent}!`);
-                        updateScores();
-                        resetBoard();
-                        return;
+                        showWinLine();
+                        setTimeout(() => {
+                            winMessage.textContent = `${document.getElementById(winner + 'Header').textContent} виграв!`;
+                            winMessage.style.display = 'block';
+                        }, 1000);
+                    } else if (isBoardFull()) {
+                        setTimeout(() => {
+                            drawMessage.style.display = 'block';
+                        }, 1000);
                     }
                     currentPlayer = currentPlayer === 1 ? 2 : 1;
                     updatePreview();
-                    return;
+                    updateScores();
+                    break;
                 }
             }
         }
 
         function addDisc(row, col, player) {
-            const cell = document.querySelector(`.cell[data-row='${row}'][data-col='${col}']`);
             const disc = document.createElement("div");
-            disc.classList.add("disc", `player${player}`);
+            disc.classList.add("disc", player === 1 ? "player1" : "player2");
+            const cell = gameBoard.children[row * cols + col];
             cell.appendChild(disc);
-            cell.classList.remove("empty");
         }
 
         function updatePreview() {
             previewDisc.style.backgroundColor = currentPlayer === 1 ? "red" : "yellow";
         }
 
-        function checkWin(row, col) {
-            const directions = [
-                { r: 0, c: 1 }, { r: 1, c: 0 },
-                { r: 1, c: 1 }, { r: 1, c: -1 }
-            ];
-            for (const { r, c } of directions) {
-                let count = 1;
-                const winCells = [{ row, col }];
-                winCells.push(...getWinningCells(row, col, r, c));
-                winCells.push(...getWinningCells(row, col, -r, -c));
+        function showWinLine() {
+            const winningCells = getWinningCells();
+            if (winningCells.length >= 4) {
+                const start = winningCells[0];
+                const end = winningCells[winningCells.length - 1];
+                winLine = document.createElement("div");
+                winLine.classList.add("win-line");
+                const startX = start.col * (gameBoard.offsetWidth / cols) + gameBoard.offsetLeft;
+                const startY = start.row * (gameBoard.offsetHeight / rows) + gameBoard.offsetTop;
+                const endX = end.col * (gameBoard.offsetWidth / cols) + gameBoard.offsetLeft;
+                const endY = end.row * (gameBoard.offsetHeight / rows) + gameBoard.offsetTop;
 
-                if (winCells.length >= 4) {
-                    drawWinLine(winCells);
-                    return true;
+                const width = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+                const angle = Math.atan2(endY - startY, endX - startX) * 180 / Math.PI;
+
+                winLine.style.width = width + "px";
+                winLine.style.height = "5px";
+                winLine.style.transform = `rotate(${angle}deg)`;
+                winLine.style.top = startY + "px";
+                winLine.style.left = startX + "px";
+                document.body.appendChild(winLine);
+
+                setTimeout(() => {
+                    winLine.style.width = "0";
+                }, 2000);
+            }
+        }
+
+        function getWinningCells() {
+            const directions = [
+                [1, 0], [0, 1], [1, 1], [1, -1]
+            ];
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    if (grid[row][col] !== 0) {
+                        for (const [r, c] of directions) {
+                            const cells = [];
+                            let newRow = row, newCol = col;
+                            while (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < cols &&
+                                   grid[newRow][newCol] === grid[row][col]) {
+                                cells.push({ row: newRow, col: newCol });
+                                newRow += r;
+                                newCol += c;
+                            }
+                            if (cells.length >= 4) {
+                                return cells;
+                            }
+                        }
+                    }
                 }
             }
-            return false;
-        }
-
-        function getWinningCells(row, col, r, c) {
-            let cells = [];
-            let newRow = row + r;
-            let newCol = col + c;
-            while (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < cols && grid[newRow][newCol] === currentPlayer) {
-                cells.push({ row: newRow, col: newCol });
-                newRow += r;
-                newCol += c;
-            }
-            return cells;
-        }
-
-        function drawWinLine(cells) {
-            if (winLine) {
-                winLine.remove();
-            }
-            winLine = document.createElement("div");
-            winLine.classList.add("win-line");
-            const start = cells[0];
-            const end = cells[cells.length - 1];
-            const startX = start.col * (gameBoard.offsetWidth / cols) + gameBoard.offsetLeft;
-            const startY = start.row * (gameBoard.offsetHeight / rows) + gameBoard.offsetTop;
-            const endX = end.col * (gameBoard.offsetWidth / cols) + gameBoard.offsetLeft;
-            const endY = end.row * (gameBoard.offsetHeight / rows) + gameBoard.offsetTop;
-
-            const width = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
-            const angle = Math.atan2(endY - startY, endX - startX) * 180 / Math.PI;
-
-            winLine.style.width = width + "px";
-            winLine.style.height = "5px";
-            winLine.style.transform = `rotate(${angle}deg)`;
-            winLine.style.top = startY + "px";
-            winLine.style.left = startX + "px";
-            document.body.appendChild(winLine);
-        }
-
-        function resetBoard() {
-            grid = Array.from({ length: rows }, () => Array(cols).fill(0));
-            currentPlayer = 1;
-            createBoard();
-        }
-
-        function resetGame() {
-            playerScores.player1 = 0;
-            playerScores.player2 = 0;
-            updateScores();
-            resetBoard();
+            return [];
         }
 
         function updateScores() {
@@ -335,7 +357,17 @@
             document.getElementById("player2Score").textContent = playerScores.player2;
         }
 
-        createBoard();
+        function resetGame() {
+            grid = Array.from({ length: rows }, () => Array(cols).fill(0));
+            currentPlayer = 1;
+            createBoard();
+            winMessage.style.display = 'none';
+            drawMessage.style.display = 'none';
+        }
+
+        function isBoardFull() {
+            return grid.every(row => row.every(cell => cell !== 0));
+        }
     </script>
 </body>
 </html>
