@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Чотири в ряд</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .game {
+            display: inline-block;
+            position: relative;
+        }
+
+        .scoreboard {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .score {
+            font-size: 1.5em;
+            width: 150px;
+            padding: 10px;
+            background-color: #ddd;
+            border-radius: 8px;
+        }
+
+        .board {
+            position: relative;
+            background-color: black;
+            width: 350px;
+            height: 300px;
+            display: grid;
+            grid-template-rows: repeat(6, 1fr);
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            border-radius: 10px;
+            padding: 5px;
+        }
+
+        .grid .cell {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background-color: black;
+            border-radius: 50%;
+            overflow: hidden;
+        }
+
+        .grid .cell::before {
+            content: '';
+            display: block;
+            padding-top: 100%;
+        }
+
+        .cell .disc {
+            position: absolute;
+            top: -100px;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            transform: scale(0.8);
+            animation: bounce 0.5s ease forwards;
+        }
+
+        .disc.player1 {
+            background-color: red;
+        }
+
+        .disc.player2 {
+            background-color: yellow;
+        }
+
+        .reset-button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 1.2em;
+            cursor: pointer;
+            background-color: #555;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+
+        .reset-button:hover {
+            background-color: #333;
+        }
+
+        @keyframes bounce {
+            0% {
+                top: -100px;
+            }
+            60% {
+                top: 20px;
+            }
+            100% {
+                top: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game">
+        <div class="scoreboard">
+            <div class="score" id="player1">Гравець 1: 0</div>
+            <div class="score" id="player2">Гравець 2: 0</div>
+        </div>
+        <div class="board">
+            <!-- Ігрове поле -->
+            <div class="grid">
+                <!-- Генерується динамічно через JavaScript -->
+            </div>
+        </div>
+        <button class="reset-button" onclick="resetGame()">Перезапуск</button>
+    </div>
+    <script>
+        const rows = 6;
+        const cols = 7;
+        let currentPlayer = 1;
+        let grid = Array.from({ length: rows }, () => Array(cols).fill(0));
+        let scores = { player1: 0, player2: 0 };
+
+        const boardElement = document.querySelector('.grid');
+        const player1Score = document.getElementById('player1');
+        const player2Score = document.getElementById('player2');
+
+        // Ініціалізація ігрового поля
+        function initBoard() {
+            boardElement.innerHTML = '';
+            grid = Array.from({ length: rows }, () => Array(cols).fill(0));
+
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    cell.addEventListener('click', handleCellClick);
+                    boardElement.appendChild(cell);
+                }
+            }
+        }
+
+        // Обробка кліку по комірці
+        function handleCellClick(event) {
+            const col = event.target.dataset.col;
+            for (let row = rows - 1; row >= 0; row--) {
+                if (grid[row][col] === 0) {
+                    grid[row][col] = currentPlayer;
+                    const cell = boardElement.querySelector(`.cell[data-row='${row}'][data-col='${col}']`);
+                    const disc = document.createElement('div');
+                    disc.classList.add('disc', `player${currentPlayer}`);
+                    cell.appendChild(disc);
+                    if (checkWin(row, col)) {
+                        alert(`Гравець ${currentPlayer} виграв!`);
+                        scores[`player${currentPlayer}`]++;
+                        updateScores();
+                        resetBoard();
+                    } else {
+                        currentPlayer = currentPlayer === 1 ? 2 : 1;
+                    }
+                    break;
+                }
+            }
+        }
+
+        // Перевірка на перемогу
+        function checkWin(row, col) {
+            const directions = [
+                { r: 0, c: 1 }, // Горизонталь
+                { r: 1, c: 0 }, // Вертикаль
+                { r: 1, c: 1 }, // Діагональ вправо вниз
+                { r: 1, c: -1 } // Діагональ вправо вверх
+            ];
+
+            for (const { r, c } of directions) {
+                let count = 1;
+                count += countInDirection(row, col, r, c);
+                count += countInDirection(row, col, -r, -c);
+                if (count >= 4) return true;
+            }
+            return false;
+        }
+
+        function countInDirection(row, col, dr, dc) {
+            let count = 0;
+            let player = grid[row][col];
+            for (let i = 1; i < 4; i++) {
+                const newRow = row + dr * i;
+                const newCol = col + dc * i;
+                if (
+                    newRow >= 0 &&
+                    newRow < rows &&
+                    newCol >= 0 &&
+                    newCol < cols &&
+                    grid[newRow][newCol] === player
+                ) {
+                    count++;
+                } else {
+                    break;
+                }
+            }
+            return count;
+        }
+
+        // Оновлення рахунку
+        function updateScores() {
+            player1Score.textContent = `Гравець 1: ${scores.player1}`;
+            player2Score.textContent = `Гравець 2: ${scores.player2}`;
+        }
+
+        // Скидання гри
+        function resetGame() {
+            initBoard();
+            currentPlayer = 1;
+        }
+
+        // Скидання поля
+        function resetBoard() {
+            grid = Array.from({ length: rows }, () => Array(cols).fill(0));
+            initBoard();
+        }
+
+        // Запуск гри
+        initBoard();
+    </script>
+</body>
+</html>
