@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Чотири в ряд</title>
+    <title>Connect Four</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -114,12 +114,11 @@
             <div class="score" id="player2">Гравець 2: 0</div>
         </div>
         <div class="board">
-            <!-- Ігрове поле -->
             <div class="grid">
-                <!-- Генерується динамічно через JavaScript -->
+                <!-- Поле генерується через JavaScript -->
             </div>
         </div>
-        <button class="reset-button" onclick="resetGame()">Перезапуск</button>
+        <button class="reset-button" onclick="resetGame()">Перезапустити</button>
     </div>
     <script>
         const rows = 6;
@@ -132,7 +131,7 @@
         const player1Score = document.getElementById('player1');
         const player2Score = document.getElementById('player2');
 
-        // Ініціалізація ігрового поля
+        // Ініціалізація поля
         function initBoard() {
             boardElement.innerHTML = '';
             grid = Array.from({ length: rows }, () => Array(cols).fill(0));
@@ -149,7 +148,7 @@
             }
         }
 
-        // Обробка кліку по комірці
+        // Обробка кліку
         function handleCellClick(event) {
             const col = event.target.dataset.col;
             for (let row = rows - 1; row >= 0; row--) {
@@ -164,9 +163,9 @@
                         scores[`player${currentPlayer}`]++;
                         updateScores();
                         resetBoard();
-                    } else {
-                        currentPlayer = currentPlayer === 1 ? 2 : 1;
+                        return;
                     }
+                    currentPlayer = currentPlayer === 1 ? 2 : 1;
                     break;
                 }
             }
@@ -190,6 +189,7 @@
             return false;
         }
 
+        // Перевірка в одному напрямку
         function countInDirection(row, col, dr, dc) {
             let count = 0;
             let player = grid[row][col];
@@ -229,7 +229,7 @@
             initBoard();
         }
 
-        // Запуск гри
+        // Старт гри
         initBoard();
     </script>
 </body>
