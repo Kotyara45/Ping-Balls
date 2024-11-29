@@ -187,8 +187,16 @@
         const previewDisc = document.getElementById("previewDisc");
 
         function startGame() {
-            const player1Name = document.getElementById("player1Name").value || "Гравець 1";
-            const player2Name = document.getElementById("player2Name").value || "Гравець 2";
+            let player1Name = document.getElementById("player1Name").value || "Гравець 1";
+            let player2Name = document.getElementById("player2Name").value || "Гравець 2";
+
+            // Перевірка імен
+            if (player1Name === "52" || player1Name === "69") {
+                player1Name = "Пфу Абаюдна";
+            }
+            if (player2Name === "52" || player2Name === "69") {
+                player2Name = "ой ой ой набрал кондицей в моменте";
+            }
 
             document.getElementById("player1Header").textContent = player1Name;
             document.getElementById("player2Header").textContent = player2Name;
@@ -268,15 +276,17 @@
                 const newCol = col + dc * i;
                 if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < cols && grid[newRow][newCol] === player) {
                     count++;
-                } else break;
+                } else {
+                    break;
+                }
             }
             return count;
         }
 
         function resetGame() {
-            resetBoard();
-            playerScores.player1 = playerScores.player2 = 0;
-            updateScores();
+            grid = Array.from({ length: rows }, () => Array(cols).fill(0));
+            currentPlayer = 1;
+            createBoard();
         }
 
         function resetBoard() {
