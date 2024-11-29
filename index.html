@@ -5,70 +5,62 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Connect Four</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background-color: #f0f0f0;
+        * {
             margin: 0;
-            padding: 20px;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        .game {
-            display: inline-block;
-            position: relative;
-        }
-
-        .scoreboard {
+        body {
             display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #000;
         }
 
-        .score {
-            font-size: 1.5em;
-            width: 150px;
-            padding: 10px;
-            background-color: #ddd;
-            border-radius: 8px;
-        }
-
-        .board {
-            position: relative;
-            background-color: black;
-            width: 350px;
-            height: 300px;
+        .game-container {
             display: grid;
-            grid-template-rows: repeat(6, 1fr);
             grid-template-columns: repeat(7, 1fr);
+            grid-template-rows: repeat(6, 1fr);
             gap: 5px;
+            width: 90vmin;
+            height: 80vmin;
+            background-color: black;
+            border: 5px solid white;
             border-radius: 10px;
-            padding: 5px;
+            position: relative;
         }
 
-        .grid .cell {
-            position: relative;
+        .cell {
             width: 100%;
             height: 100%;
             background-color: black;
             border-radius: 50%;
+            position: relative;
             overflow: hidden;
         }
 
-        .grid .cell::before {
+        .cell::after {
             content: '';
             display: block;
             padding-top: 100%;
         }
 
-        .cell .disc {
+        .cell.empty {
+            background-color: white;
+        }
+
+        .disc {
             position: absolute;
-            top: -100px;
+            top: -100%;
             left: 0;
             width: 100%;
             height: 100%;
+            background-color: transparent;
             border-radius: 50%;
             transform: scale(0.8);
-            animation: bounce 0.5s ease forwards;
+            animation: drop 0.5s ease forwards;
         }
 
         .disc.player1 {
@@ -79,99 +71,89 @@
             background-color: yellow;
         }
 
-        .reset-button {
-            margin-top: 20px;
-            padding: 10px 20px;
-            font-size: 1.2em;
-            cursor: pointer;
-            background-color: #555;
-            color: white;
-            border: none;
-            border-radius: 5px;
-        }
-
-        .reset-button:hover {
-            background-color: #333;
-        }
-
-        @keyframes bounce {
+        @keyframes drop {
             0% {
-                top: -100px;
-            }
-            60% {
-                top: 20px;
+                top: -100%;
             }
             100% {
                 top: 0;
             }
         }
+
+        .reset {
+            position: absolute;
+            bottom: -60px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            font-size: 1.2em;
+            background-color: white;
+            color: black;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
-    <div class="game">
-        <div class="scoreboard">
-            <div class="score" id="player1">Гравець 1: 0</div>
-            <div class="score" id="player2">Гравець 2: 0</div>
-        </div>
-        <div class="board">
-            <div class="grid">
-                <!-- Поле генерується через JavaScript -->
-            </div>
-        </div>
-        <button class="reset-button" onclick="resetGame()">Перезапустити</button>
-    </div>
+    <div id="game" class="game-container"></div>
+    <button class="reset" onclick="resetGame()">Перезапустити</button>
     <script>
         const rows = 6;
         const cols = 7;
         let currentPlayer = 1;
         let grid = Array.from({ length: rows }, () => Array(cols).fill(0));
-        let scores = { player1: 0, player2: 0 };
+        const gameContainer = document.getElementById("game");
 
-        const boardElement = document.querySelector('.grid');
-        const player1Score = document.getElementById('player1');
-        const player2Score = document.getElementById('player2');
-
-        // Ініціалізація поля
-        function initBoard() {
-            boardElement.innerHTML = '';
-            grid = Array.from({ length: rows }, () => Array(cols).fill(0));
-
+        function createBoard() {
+            gameContainer.innerHTML = "";
             for (let row = 0; row < rows; row++) {
                 for (let col = 0; col < cols; col++) {
-                    const cell = document.createElement('div');
-                    cell.classList.add('cell');
+                    const cell = document.createElement("div");
+                    cell.classList.add("cell", "empty");
                     cell.dataset.row = row;
                     cell.dataset.col = col;
-                    cell.addEventListener('click', handleCellClick);
-                    boardElement.appendChild(cell);
+                    gameContainer.appendChild(cell);
                 }
             }
+            addColumnListeners();
         }
 
-        // Обробка кліку
-        function handleCellClick(event) {
-            const col = event.target.dataset.col;
+        function addColumnListeners() {
+            const cells = document.querySelectorAll(".cell");
+            cells.forEach(cell => {
+                cell.addEventListener("click", () => handleDrop(cell.dataset.col));
+            });
+        }
+
+        function handleDrop(col) {
+            col = parseInt(col);
             for (let row = rows - 1; row >= 0; row--) {
                 if (grid[row][col] === 0) {
                     grid[row][col] = currentPlayer;
-                    const cell = boardElement.querySelector(`.cell[data-row='${row}'][data-col='${col}']`);
-                    const disc = document.createElement('div');
-                    disc.classList.add('disc', `player${currentPlayer}`);
-                    cell.appendChild(disc);
+                    addDisc(row, col, currentPlayer);
                     if (checkWin(row, col)) {
-                        alert(`Гравець ${currentPlayer} виграв!`);
-                        scores[`player${currentPlayer}`]++;
-                        updateScores();
-                        resetBoard();
-                        return;
+                        setTimeout(() => {
+                            alert(`Гравець ${currentPlayer} виграв!`);
+                            resetGame();
+                        }, 500);
                     }
                     currentPlayer = currentPlayer === 1 ? 2 : 1;
-                    break;
+                    return;
                 }
             }
         }
 
-        // Перевірка на перемогу
+        function addDisc(row, col, player) {
+            const cell = document.querySelector(
+                `.cell[data-row='${row}'][data-col='${col}']`
+            );
+            const disc = document.createElement("div");
+            disc.classList.add("disc", `player${player}`);
+            cell.appendChild(disc);
+            cell.classList.remove("empty");
+        }
+
         function checkWin(row, col) {
             const directions = [
                 { r: 0, c: 1 }, // Горизонталь
@@ -189,7 +171,6 @@
             return false;
         }
 
-        // Перевірка в одному напрямку
         function countInDirection(row, col, dr, dc) {
             let count = 0;
             let player = grid[row][col];
@@ -211,26 +192,13 @@
             return count;
         }
 
-        // Оновлення рахунку
-        function updateScores() {
-            player1Score.textContent = `Гравець 1: ${scores.player1}`;
-            player2Score.textContent = `Гравець 2: ${scores.player2}`;
-        }
-
-        // Скидання гри
         function resetGame() {
-            initBoard();
-            currentPlayer = 1;
-        }
-
-        // Скидання поля
-        function resetBoard() {
             grid = Array.from({ length: rows }, () => Array(cols).fill(0));
-            initBoard();
+            currentPlayer = 1;
+            createBoard();
         }
 
-        // Старт гри
-        initBoard();
+        createBoard();
     </script>
 </body>
 </html>
